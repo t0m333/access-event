@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check required files
         run: |
           echo "=== Checking files ==="
@@ -24,27 +24,29 @@ jobs:
               exit 1
             fi
           done
-          
+
       - name: Check User Stories
         run: |
-          COUNT=$(grep -c "Как " docs/requirements.md || echo 0)
+          COUNT=$(grep -c "Как " docs/requirements.md || true)
+          COUNT=${COUNT:-0}
           echo "User Stories found: $COUNT"
           if [ "$COUNT" -lt 10 ]; then
             echo "FAIL: need >= 10 User Stories"
             exit 1
           fi
           echo "PASS: User Stories OK"
-          
+
       - name: Check NFR
         run: |
-          COUNT=$(grep -c "NFR-" docs/requirements.md || echo 0)
+          COUNT=$(grep -c "NFR-" docs/requirements.md || true)
+          COUNT=${COUNT:-0}
           echo "NFR found: $COUNT"
           if [ "$COUNT" -lt 5 ]; then
             echo "FAIL: need >= 5 NFR"
             exit 1
           fi
           echo "PASS: NFR OK"
-          
+
       - name: Check TZ sections
         run: |
           for section in "Назначение" "предметной области" "функци" "качеств" "интерфей" "данны" "стек" "Ограничен"; do
@@ -54,15 +56,17 @@ jobs:
             fi
           done
           echo "PASS: All TZ sections found"
-          
+
       - name: Check entities
         run: |
-          COUNT=$(grep -c "|" docs/analysis.md || echo 0)
+          COUNT=$(grep -c "|" docs/analysis.md || true)
+          COUNT=${COUNT:-0}
+          echo "Entities (table lines) found: $COUNT"
           if [ "$COUNT" -lt 10 ]; then
             echo "FAIL: need more entities in analysis.md"
             exit 1
           fi
           echo "PASS: Entities OK"
-          
+
       - name: All checks passed
         run: echo "ALL CHECKS PASSED"
