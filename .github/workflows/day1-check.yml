@@ -8,64 +8,67 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Debug — list files
+        run: |
+          echo "=== Repo tree ==="
+          ls -la
+          echo "--- docs ---"
+          ls -la docs || echo "no docs dir"
+
       - name: Check required files
         run: |
-          echo "=== Checking files ==="
+          set +e
+          FAIL=0
           for f in README.md docs/analysis.md docs/requirements.md docs/tz.md docs/stakeholders.md; do
-            if [ -f "$f" ]; then
-              echo "PASS: $f found"
-              SIZE=$(wc -c < "$f")
-              if [ "$SIZE" -lt 500 ]; then
-                echo "FAIL: $f is too small ($SIZE bytes, need >= 500)"
-                exit 1
-              fi
-            else
-              echo "FAIL: $f not found"
-              exit 1
+            if [ ! -f "$f" ]; then
+              echo "FAIL: $f not found"; FAIL=1; continue
+            fi
+            SIZE=$(wc -c < "$f" | tr -d ' ')
+            echo "INFO: $f size=$SIZE"
+            if [ "$SIZE" -lt 500 ]; then
+              echo "FAIL: $f too small ($SIZE < 500)"; FAIL=1
             fi
           done
+          [ "$FAIL" -eq 0 ] && echo "PASS: files OK" || exit 1
 
       - name: Check User Stories
         run: |
-          COUNT=$(grep -c "Как " docs/requirements.md || true)
-          COUNT=${COUNT:-0}
+          set +e
+          COUNT=$(grep -c "Как " docs/requirements.md 2>/dev/null)
+          [ -z "$COUNT" ] && COUNT=0
           echo "User Stories found: $COUNT"
-          if [ "$COUNT" -lt 10 ]; then
-            echo "FAIL: need >= 10 User Stories"
-            exit 1
-          fi
+          [ "$COUNT" -ge 10 ] || { echo "FAIL: need >= 10"; exit 1; }
           echo "PASS: User Stories OK"
 
       - name: Check NFR
         run: |
-          COUNT=$(grep -c "NFR-" docs/requirements.md || true)
-          COUNT=${COUNT:-0}
+          set +e
+          COUNT=$(grep -c "NFR-" docs/requirements.md 2>/dev/null)
+          [ -z "$COUNT" ] && COUNT=0
           echo "NFR found: $COUNT"
-          if [ "$COUNT" -lt 5 ]; then
-            echo "FAIL: need >= 5 NFR"
-            exit 1
-          fi
+          [ "$COUNT" -ge 5 ] || { echo "FAIL: need >= 5"; exit 1; }
           echo "PASS: NFR OK"
 
       - name: Check TZ sections
         run: |
+          set +e
+          FAIL=0
           for section in "Назначение" "предметной области" "функци" "качеств" "интерфей" "данны" "стек" "Ограничен"; do
-            if ! grep -qi "$section" docs/tz.md; then
-              echo "FAIL: section '$section' not found in tz.md"
-              exit 1
+            if grep -qi "$section" docs/tz.md; then
+              echo "PASS: '$section'"
+            else
+              echo "FAIL: '$section' not found"; FAIL=1
             fi
           done
-          echo "PASS: All TZ sections found"
+          [ "$FAIL" -eq 0 ] || exit 1
 
       - name: Check entities
         run: |
-          COUNT=$(grep -c "|" docs/analysis.md || true)
-          COUNT=${COUNT:-0}
+          set +e
+          COUNT=$(grep -c "|" docs/analysis.md 2>/dev/null)
+          [ -z "$COUNT" ] && COUNT=0
           echo "Entities found: $COUNT"
-          if [ "$COUNT" -lt 10 ]; then
-            echo "FAIL: need more entities in analysis.md"
-            exit 1
-          fi
+          [ "$COUNT" -ge 10 ] || { echo "FAIL: need >= 10"; exit 1; }
           echo "PASS: Entities OK"
 
       - name: All checks passed
