@@ -61,7 +61,7 @@ jobs:
         run: |
           COUNT=$(grep -c "|" docs/analysis.md || true)
           COUNT=${COUNT:-0}
-          echo "Entities (table lines) found: $COUNT"
+          echo "Entities found: $COUNT"
           if [ "$COUNT" -lt 10 ]; then
             echo "FAIL: need more entities in analysis.md"
             exit 1
